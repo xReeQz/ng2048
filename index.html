@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>2048</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="assets/styles/main.min.css">
+    <link href="favicon.ico" rel="shortcut icon" />
+</head>
+
+<body ng-app="twenty48App">
+    <div class="container" ng-include="'app/views/main.html'"></div>
+
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/bootstrap-sass/assets/javascripts/bootstrap.min.js"></script>
+    <script src="bower_components/angular/angular.min.js"></script>
+    <script src="bower_components/angular-cookies/angular-cookies.min.js"></script>
+
+    <script src="app/app.js"></script>
+    <!-- MODULES & SERVICES -->
+    <script src="app/game/game.js"></script>
+    <script src="app/grid/grid.js"></script>
+    <script src="app/keyboard/keyboard.js"></script>
+    <!-- DIRECTIVES -->
+    <script src="app/grid/directives/grid-directive.js"></script>
+    <script src="app/grid/directives/tile-directive.js"></script>
+</body>
+
+</html>

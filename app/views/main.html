@@ -1,0 +1,15 @@
+<div id="content" ng-controller="GameController as ctrl">
+
+    <div id="heading" class="row">
+        <h1 class="title">ng-2048</h1>
+        <div class="scores-container">
+            <div class="current-score">{{ ctrl.game.currentScore }}</div>
+            <div class="best-score">{{ ctrl.game.highScore }}</div>
+        </div>
+    </div>
+    <!-- GRID -->
+    <div id="game-container">
+        <div class="row" ng-model="ctrl.game" grid></div>
+    </div>
+
+</div>
