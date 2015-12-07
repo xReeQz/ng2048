@@ -1,4 +1,4 @@
-(function() {
+(function () {
 
     'use strict';
 
@@ -20,25 +20,34 @@
             right: { x: 1, y: 0 },
             down: { x: 0, y: 1 },
             up: { x: 0, y: -1 }
-    }
+        }
 
         this.grid = [];
         this.tiles = [];
 
-        this.forEach = forEach;
+        this.newTile = newTile;
+        this.moveTile = moveTile;
         this.setCellAt = setCellAt;
         this.getCellAt = getCellAt;
-        this.withinGrid = withinGrid;
+        this.insertTile = insertTile;
+        this.removeTile = removeTile;
+        this.prepareTiles = prepareTiles;
         this.getEmptyCells = getEmptyCells;
+        this.isSamePosition = isSamePosition;
+        this.anyCellsAvailable = anyCellsAvailable;
         this.buildEmptyGameBoard = buildEmptyGameBoard;
+        this.tileMatchesAvailable = tileMatchesAvailable;
+        this.insertNewTileRandomly = insertNewTileRandomly;
         this.buildStartingPosition = buildStartingPosition;
+        this.getTraversalDirections = getTraversalDirections;
+        this.calculateNextPosition = calculateNextPosition;
 
         function buildEmptyGameBoard() {
             for (var i = 0; i < TOTAL; i++) {
                 that.grid[i] = null;
             }
 
-            that.forEach(function (x, y) {
+            forEach(function (x, y) {
                 that.setCellAt({ x: x, y: y });
             });
         }
@@ -51,19 +60,23 @@
         }
 
         function setCellAt(pos, tile) {
-            if (that.withinGrid(pos)) {
+            if (withinGrid(pos)) {
                 var xPos = coordinatesToPosition(pos);
                 that.tiles[xPos] = tile;
             }
         }
 
         function getCellAt(pos) {
-            if (that.withinGrid(pos)) {
+            if (withinGrid(pos)) {
                 var xPos = coordinatesToPosition(pos);
                 return that.tiles[xPos];
             } else {
                 return null;
             }
+        }
+
+        function isCellEmpty(pos) {
+            return getCellAt(pos) == null;
         }
 
         function withinGrid(cell) {
@@ -91,7 +104,7 @@
         function getEmptyCells() {
             var cells = [];
 
-            that.forEach(function(x, y, tile) {
+            forEach(function (x, y, tile) {
                 if (!tile) {
                     cells.push({ x: x, y: y });
                 }
@@ -126,19 +139,132 @@
             var cell = getRandomEmptyCell();
 
             if (cell) {
-                insertTile(new Tile(cell, 2));
+                that.insertTile(new Tile(cell, 2));
             }
 
             return;
         }
 
+        function getTraversalDirections(key) {
+            var vector = vectors[key];
+            var positions = { x: [], y: [] };
+
+            for (var i = 0; i < SIZE; i++) {
+                positions.x.push(i);
+                positions.y.push(i);
+            }
+
+            if (vector.x > 0) {
+                positions.x = positions.x.reverse();
+            }
+
+            if (vector.y > 0) {
+                positions.y = positions.y.reverse();
+            }
+
+            return positions;
+        }
+
+        function calculateNextPosition(cell, key) {
+            var vector = vectors[key];
+            var previous;
+
+            do {
+                previous = cell;
+                cell = {
+                    x: previous.x + vector.x,
+                    y: previous.y + vector.y
+                };
+            } while (withinGrid(cell) && isCellEmpty(cell))
+
+            return {
+                newPosition: previous,
+                next: getCellAt(cell)
+            };
+        }
+
+        function moveTile(tile, newPosition) {
+            var oldPosition = { x: tile.x, y: tile.y };
+
+            setCellAt(oldPosition, null);
+            setCellAt(newPosition, tile);
+
+            tile.updatePosition(newPosition);
+        }
+
+        function newTile(position, value) {
+            return new Tile(position, value);
+        }
+
+        function isSamePosition(initialPosition, newPosition) {
+            return initialPosition.x === newPosition.x &&
+                   initialPosition.y === newPosition.y;
+        }
+
+        function prepareTiles() {
+            forEach(function (x, y, tile) {
+                if (tile) {
+                    tile.reset();
+                }
+            });
+        }
+
+        function anyCellsAvailable() {
+            return that.tiles.length < TOTAL ||
+                   that.tiles.filter(function (item) {
+                       return !!item;
+                   }).length !== that.tiles.length;
+        }
+
+        function tileMatchesAvailable() {
+            for (var i = 0; i < TOTAL; i++) {
+                var pos = positionToCoordinates(i);
+                var tile = that.tiles[i];
+
+                if (tile) {
+                    for (var vectorName in vectors) {
+                        if (vectors.hasOwnProperty(vectorName)) {
+                            var vector = vectors[vectorName];
+                            var cell = { x: pos.x + vector.x, y: pos.y + vector.y };
+                            var other = that.getCellAt(cell);
+                            if (other && other.value === tile.value) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        };
+
     }
 
     function TileModel() {
-        return function(pos, val) {
+        return function (pos, val) {
+            var that = this;
+
+            this.uid = getUid();
             this.x = pos.x;
             this.y = pos.y;
             this.value = val || 2;
+            this.merged = null;
+
+            this.reset = reset;
+            this.updatePosition = updatePosition;
+
+            function reset() {
+                that.merged = false;
+            }
+
+            function updatePosition(newPosition) {
+                that.uid = getUid();
+                that.x = newPosition.x;
+                that.y = newPosition.y;
+            }
+
+            function getUid() {
+                return Math.floor(Math.random() * Date.now());
+            }
         }
     }
 

@@ -10,7 +10,6 @@
 
     function KeyboardService($document) {
         var that = this;
-        var keyEventHandlers = [];
 
         var UP = 'up';
         var RIGHT = 'right';
@@ -23,12 +22,11 @@
             40: DOWN
         };
 
-        this.init = init;
         this.on = on;
+        this.init = init;
+        this.keyEventHandlers = [];
 
         function init() {
-            keyEventHandlers = [];
-
             $document.bind('keydown', function(e) {
                 var key = keyboardMap[e.which];
                 if (key) {
@@ -39,19 +37,19 @@
         }
 
         function handleKeyEvent(key, e) {
-            if (!keyEventHandlers) {
+            if (!that.keyEventHandlers.length) {
                 return;
             }
 
             e.preventDefault();
-            for (var i = 0; i < keyEventHandlers.length; i++) {
-                var callback = keyEventHandlers[i];
+            for (var i = 0; i < that.keyEventHandlers.length; i++) {
+                var callback = that.keyEventHandlers[i];
                 callback(key, e);
             }
         }
 
         function on(callback) {
-            keyEventHandlers.push(callback);
+            that.keyEventHandlers.push(callback);
         }
         
     }

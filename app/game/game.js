@@ -3,22 +3,24 @@
     'use strict';
 
     angular
-        .module('game', [])
+        .module('game', ['grid', 'ngCookies'])
         .service('GameManager', GameManager);
 
-    GameManager.$inject = ['GridService'];
+    GameManager.$inject = ['GridService', '$cookieStore'];
 
-    function GameManager(gridService) {
+    function GameManager(gridService, $cookieStore) {
         var that = this;
+
         var gameOver;
-        var win;
+        var hasWon;
+
+        this.winningValue = 2048;
 
         this.move = move;
         this.newGame = newGame;
+
         this.grid = gridService.grid;
         this.tiles = gridService.tiles;
-        this.updateScore = updateScore;
-        this.movesAvailable = movesAvailable;
 
         function newGame() {
             gridService.buildEmptyGameBoard();
@@ -26,20 +28,82 @@
             reinit();
         }
 
-        function move() {
-            if (win) {
+        function move(key) {
+            if (hasWon) {
                 return false;
+            }
+
+            var hasMoved = false;
+            var positions = gridService.getTraversalDirections(key);
+
+            gridService.prepareTiles();
+
+            positions.x.forEach(function (x) {
+                positions.y.forEach(function (y) {
+                    var originalPosition = { x: x, y: y };
+                    var tile = gridService.getCellAt(originalPosition);
+
+                    if (tile) {
+                        var cell = gridService.calculateNextPosition(tile, key);
+                        var next = cell.next;
+
+                        console.log(tile.x + ' => ' + cell.newPosition.x + '; ' + tile.y + ' => ' + cell.newPosition.y);
+
+                        if (next && next.value === tile.value && !next.merged) {
+                            var newValue = tile.value * 2;
+                            var mergedTile = gridService.newTile(tile, newValue);
+                            mergedTile.merged = [tile, cell.next];
+
+                            gridService.insertTile(mergedTile);
+                            gridService.removeTile(tile);
+                            gridService.moveTile(mergedTile, next);
+
+                            updateScore(that.currentScore + newValue);
+
+                            if (mergedTile.value === that.winningValue) {
+                                hasWon = true;
+                            }
+
+                            hasMoved = true;
+                        } else {
+                            gridService.moveTile(tile, cell.newPosition);
+                        }
+
+                        if (!gridService.isSamePosition(originalPosition, cell.newPosition)) {
+                            hasMoved = true;
+                        }
+                    }
+                });
+            });
+
+            if (hasMoved) {
+                gridService.insertNewTileRandomly();
+
+                if (hasWon || !movesAvailable()) {
+                    gameOver = true;
+                }
+            }
+
+            return true;
+        }
+
+        function updateScore(newScore) {
+            that.currentScore = newScore;
+
+            if (that.currentScore > getHighScore()) {
+                that.highScore = newScore;
+                $cookieStore.put('highScore', newScore);
             }
         }
 
-        function updateScore() {
-            
+        function getHighScore() {
+            return +$cookieStore.get('highScore') || 0;
         }
 
         function reinit() {
-            win = false;
+            hasWon = false;
             gameOver = false;
-            that.highScore = 0;
+            that.highScore = getHighScore();
             that.currentScore = 0;
         }
 

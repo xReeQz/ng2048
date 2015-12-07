@@ -9,7 +9,6 @@
     function gridDirective() {
         var directive = {
             restrict: 'A',
-            require: 'ngModel',
             scope: {
                 ngModel: '='
             },

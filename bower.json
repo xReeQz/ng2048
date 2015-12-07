@@ -1,0 +1,10 @@
+{
+  "name": "ng2048",
+  "version": "0.0.0",
+  "license": "MIT",
+  "dependencies": {
+    "angular-cookies": "~1.4.8",
+    "angular": "~1.4.8",
+    "bootstrap-sass": "~3.3.6"
+  }
+}
