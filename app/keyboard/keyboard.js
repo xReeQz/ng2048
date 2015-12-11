@@ -27,7 +27,7 @@
         this.keyEventHandlers = [];
 
         function init() {
-            $document.bind('keydown', function(e) {
+            $document.on('keydown', function(e) {
                 var key = keyboardMap[e.which];
                 if (key) {
                     e.preventDefault();

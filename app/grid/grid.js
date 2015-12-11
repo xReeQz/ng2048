@@ -257,7 +257,6 @@
             }
 
             function updatePosition(newPosition) {
-                that.uid = getUid();
                 that.x = newPosition.x;
                 that.y = newPosition.y;
             }
