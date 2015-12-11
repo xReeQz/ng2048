@@ -24,10 +24,8 @@
         }
 
         function startGame() {
-            keyboardService.on(function(key) {
-                $scope.$apply(function() {
-                    that.game.move(key);
-                });
+            keyboardService.on(function (key) {
+                that.game.move(key);
             });
         }
     }

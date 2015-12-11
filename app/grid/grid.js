@@ -7,13 +7,13 @@
         .service('GridService', GridService)
         .factory('TileModel', TileModel);
 
-    GridService.$inject = ['TileModel'];
+    GridService.$inject = ['$timeout', 'TileModel'];
 
-    function GridService(Tile) {
+    function GridService($timeout, Tile) {
         var that = this;
 
         var SIZE = 4;
-        var STARTING_TILE_NUMBER = 2;
+        var STARTING_TILE_NUMBER = 1;
         var TOTAL = SIZE * SIZE;
         var vectors = {
             left: { x: -1, y: 0 },
@@ -186,10 +186,11 @@
         function moveTile(tile, newPosition) {
             var oldPosition = { x: tile.x, y: tile.y };
 
-            setCellAt(oldPosition, null);
-            setCellAt(newPosition, tile);
-
             tile.updatePosition(newPosition);
+
+            setCellAt(newPosition, tile);
+            setCellAt(oldPosition, null);
+
         }
 
         function newTile(position, value) {
