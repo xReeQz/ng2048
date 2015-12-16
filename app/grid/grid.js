@@ -7,14 +7,14 @@
         .service('GridService', GridService)
         .factory('TileModel', TileModel);
 
-    GridService.$inject = ['$timeout', 'TileModel'];
+    GridService.$inject = ['TileModel'];
 
-    function GridService($timeout, Tile) {
+    function GridService(Tile) {
         var that = this;
 
-        var SIZE = 4;
-        var STARTING_TILE_NUMBER = 1;
-        var TOTAL = SIZE * SIZE;
+        var GRID_SIZE = 4;
+        var STARTING_TILE_NUMBER = 2;
+        var TOTAL_TILE_NUMBER = GRID_SIZE * GRID_SIZE;
         var vectors = {
             left: { x: -1, y: 0 },
             right: { x: 1, y: 0 },
@@ -22,134 +22,96 @@
             up: { x: 0, y: -1 }
         }
 
-        this.grid = [];
         this.tiles = [];
 
-        this.newTile = newTile;
         this.moveTile = moveTile;
-        this.setCellAt = setCellAt;
-        this.getCellAt = getCellAt;
-        this.insertTile = insertTile;
-        this.removeTile = removeTile;
-        this.prepareTiles = prepareTiles;
-        this.getEmptyCells = getEmptyCells;
+        this.getTileAtPosition = getTileAtPosition;
+        this.updateTileAtPosition = updateTileAtPosition;
+        this.updateTilesState = updateTilesState;
+        this.isTileHidden = isTileHidden;
         this.isSamePosition = isSamePosition;
-        this.anyCellsAvailable = anyCellsAvailable;
-        this.buildEmptyGameBoard = buildEmptyGameBoard;
+        this.anyHiddenTiles = anyHiddenTiles;
+        this.initGameBoard = initGameBoard;
+        this.initStartingPosition = initStartingPosition;
+        this.activateNewRandomTile = activateNewRandomTile;
         this.tileMatchesAvailable = tileMatchesAvailable;
-        this.insertNewTileRandomly = insertNewTileRandomly;
-        this.buildStartingPosition = buildStartingPosition;
-        this.getTraversalDirections = getTraversalDirections;
+        this.getTraversalPositions = getTraversalPositions;
         this.calculateNextPosition = calculateNextPosition;
 
-        function buildEmptyGameBoard() {
-            for (var i = 0; i < TOTAL; i++) {
-                that.grid[i] = null;
-            }
+        function initGameBoard() {
+            for (var i = 0; i < TOTAL_TILE_NUMBER; i++) {
+                var x = i % GRID_SIZE;
+                var y = (i - x) / GRID_SIZE;
 
-            forEach(function (x, y) {
-                that.setCellAt({ x: x, y: y });
-            });
-        }
-
-        function forEach(callback) {
-            for (var i = 0; i < TOTAL; i++) {
-                var pos = positionToCoordinates(i);
-                callback(pos.x, pos.y, that.tiles[i]);
+                that.tiles[i] = new Tile({ x: x, y: y });
             }
         }
 
-        function setCellAt(pos, tile) {
-            if (withinGrid(pos)) {
-                var xPos = coordinatesToPosition(pos);
-                that.tiles[xPos] = tile;
-            }
-        }
-
-        function getCellAt(pos) {
-            if (withinGrid(pos)) {
-                var xPos = coordinatesToPosition(pos);
-                return that.tiles[xPos];
-            } else {
-                return null;
-            }
-        }
-
-        function isCellEmpty(pos) {
-            return getCellAt(pos) == null;
-        }
-
-        function withinGrid(cell) {
-            return cell.x >= 0 && cell.x < SIZE &&
-                   cell.y >= 0 && cell.y < SIZE;
-        }
-
-        function positionToCoordinates(i) {
-            var x = i % SIZE;
-            var y = (i - x) / SIZE;
-
-            return { x: x, y: y };
-        }
-
-        function coordinatesToPosition(pos) {
-            return pos.y * SIZE + pos.x;
-        }
-
-        function buildStartingPosition() {
+        function initStartingPosition() {
             for (var i = 0; i < STARTING_TILE_NUMBER; i++) {
-                insertNewTileRandomly();
+                activateNewRandomTile();
             }
         }
 
-        function getEmptyCells() {
-            var cells = [];
+        function activateNewRandomTile() {
+            var tile = getRandomHiddenTile();
 
-            forEach(function (x, y, tile) {
-                if (!tile) {
-                    cells.push({ x: x, y: y });
-                }
-            });
-
-            return cells;
-        }
-
-        function getRandomEmptyCell() {
-            var emptyCells = getEmptyCells();
-
-            if (emptyCells.length > 0) {
-                var randomIndex = Math.floor(Math.random() * emptyCells.length);
-
-                return emptyCells[randomIndex];
-            }
-
-            return null;
-        }
-
-        function insertTile(tile) {
-            var position = coordinatesToPosition(tile);
-            that.tiles[position] = tile;
-        }
-
-        function removeTile(pos) {
-            var position = coordinatesToPosition(pos);
-            delete that.tiles[position];
-        }
-
-        function insertNewTileRandomly() {
-            var cell = getRandomEmptyCell();
-
-            if (cell) {
-                that.insertTile(new Tile(cell, 2));
+            if (tile) {
+                tile.activateNew();
             }
 
             return;
         }
 
-        function getTraversalDirections(key) {
+        function getTileAtPosition(position) {
+            if (isPositionWithinGrid(position)) {
+                return that.tiles.filter(function (tile) {
+                    return tile.x === position.x && tile.y === position.y;
+                })[0];
+            } else {
+                return null;
+            }
+        }
+
+        function isTileHidden(tile) {
+            return tile == null || tile.isHidden;
+        }
+
+        function isPositionWithinGrid(position) {
+            return position.x >= 0 && position.x < GRID_SIZE &&
+                   position.y >= 0 && position.y < GRID_SIZE;
+        }
+
+        function getRandomHiddenTile() {
+            var hiddenTiles = getHiddenTiles();
+
+            if (hiddenTiles.length > 0) {
+                var randomIndex = Math.floor(Math.random() * hiddenTiles.length);
+
+                return hiddenTiles[randomIndex];
+            }
+
+            return null;
+        }
+
+        function getHiddenTiles() {
+            return that.tiles.filter(function (item) {
+                return item.isHidden;
+            });
+        }
+
+        function updateTileAtPosition(position, value) {
+            var tile = getTileAtPosition(position);
+            tile.updateValue(value);
+
+            return tile;
+        }
+
+        function getTraversalPositions(key) {
             var vector = vectors[key];
             var positions = { x: [], y: [] };
 
-            for (var i = 0; i < SIZE; i++) {
+            for (var i = 0; i < GRID_SIZE; i++) {
                 positions.x.push(i);
                 positions.y.push(i);
             }
@@ -165,36 +127,36 @@
             return positions;
         }
 
-        function calculateNextPosition(cell, key) {
+        function calculateNextPosition(tile, key) {
             var vector = vectors[key];
-            var previous;
+            var previousTile;
 
             do {
-                previous = cell;
-                cell = {
-                    x: previous.x + vector.x,
-                    y: previous.y + vector.y
-                };
-            } while (withinGrid(cell) && isCellEmpty(cell))
+                previousTile = tile;
+                tile = getTileAtPosition({
+                    x: previousTile.x + vector.x,
+                    y: previousTile.y + vector.y
+                });
+            } while (tile &&
+                     isTileHidden(tile) &&
+                     isPositionWithinGrid(tile.getPosition()))
 
             return {
-                newPosition: previous,
-                next: getCellAt(cell)
+                newPosition: previousTile.getPosition(),
+                nextTile: tile
             };
         }
 
-        function moveTile(tile, newPosition) {
-            var oldPosition = { x: tile.x, y: tile.y };
+        function moveTile(tile, newPosition, noSwap) {
+            var tileAtNewPosition = getTileAtPosition(newPosition);
 
-            tile.updatePosition(newPosition);
+            if (!noSwap) {
+                tileAtNewPosition.setPosition(tile);
+            } else {
+                tile.hide();
+            }
 
-            setCellAt(newPosition, tile);
-            setCellAt(oldPosition, null);
-
-        }
-
-        function newTile(position, value) {
-            return new Tile(position, value);
+            tile.setPosition(newPosition);
         }
 
         function isSamePosition(initialPosition, newPosition) {
@@ -202,62 +164,89 @@
                    initialPosition.y === newPosition.y;
         }
 
-        function prepareTiles() {
-            forEach(function (x, y, tile) {
-                if (tile) {
-                    tile.reset();
-                }
+        function updateTilesState() {
+            that.tiles.forEach(function (tile) {
+                tile.updateState();
             });
         }
 
-        function anyCellsAvailable() {
-            return that.tiles.length < TOTAL ||
-                   that.tiles.filter(function (item) {
-                       return !!item;
-                   }).length !== that.tiles.length;
+        function anyHiddenTiles() {
+            return getHiddenTiles().length > 0;
         }
 
         function tileMatchesAvailable() {
-            for (var i = 0; i < TOTAL; i++) {
-                var pos = positionToCoordinates(i);
+            for (var i = 0; i < TOTAL_TILE_NUMBER; i++) {
                 var tile = that.tiles[i];
 
-                if (tile) {
+                if (!isTileHidden(tile)) {
                     for (var vectorName in vectors) {
                         if (vectors.hasOwnProperty(vectorName)) {
                             var vector = vectors[vectorName];
-                            var cell = { x: pos.x + vector.x, y: pos.y + vector.y };
-                            var other = that.getCellAt(cell);
-                            if (other && other.value === tile.value) {
+                            var neighbourPosition = { x: tile.x + vector.x, y: tile.y + vector.y };
+                            var neighbourTile = getTileAtPosition(neighbourPosition);
+                            if (!isTileHidden(neighbourTile) && neighbourTile.value === tile.value) {
                                 return true;
                             }
                         }
                     }
                 }
             }
+
             return false;
         };
-
     }
 
     function TileModel() {
-        return function (pos, val) {
+        return function (position, value) {
             var that = this;
 
             this.uid = getUid();
-            this.x = pos.x;
-            this.y = pos.y;
-            this.value = val || 2;
-            this.merged = null;
+            this.x = position.x;
+            this.y = position.y;
+            this.value = value || 2;
+            this.previousPosition = null;
+            this.isMerged = false;
+            this.isHidden = true;
 
-            this.reset = reset;
-            this.updatePosition = updatePosition;
+            this.hide = hide;
+            this.activateNew = activateNew;
+            this.updateValue = updateValue;
+            this.updateState = updateState;
+            this.getPosition = getPosition;
+            this.setPosition = setPosition;
 
-            function reset() {
-                that.merged = false;
+            function hide() {
+                that.isHidden = true;
+                that.previousPosition = that.getPosition();
             }
 
-            function updatePosition(newPosition) {
+            function updateState() {
+                that.isMerged = false;
+                if (that.previousPosition) {
+                    that.setPosition(that.previousPosition);
+                    that.previousPosition = null;
+                }
+            }
+
+            function activateNew() {
+                that.value = 2;
+                that.isHidden = false;
+                that.isMerged = false;
+            }
+
+            function updateValue(newValue) {
+                that.value = newValue;
+                that.isMerged = true;
+            }
+
+            function getPosition() {
+                return {
+                    x: that.x,
+                    y: that.y
+                }
+            }
+
+            function setPosition(newPosition) {
                 that.x = newPosition.x;
                 that.y = newPosition.y;
             }

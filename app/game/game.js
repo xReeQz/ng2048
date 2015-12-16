@@ -19,21 +19,19 @@
         this.move = move;
         this.newGame = newGame;
 
-        this.grid = gridService.grid;
         this.tiles = gridService.tiles;
 
         function newGame() {
-            gridService.buildEmptyGameBoard();
-            gridService.buildStartingPosition();
+            gridService.initGameBoard();
+            gridService.initStartingPosition();
             reinit();
         }
 
         function move(key) {
 
-            $q.when(f()).then(function() {
+            $q.when(f()).then(function () {
                 console.log(that.tiles
-                    .filter(function (item) { return !!item; })
-                    .map(function (item) { return item.uid; }));
+                    .filter(function (item) { return !item.isHidden; }));
             });
 
             function f() {
@@ -42,38 +40,39 @@
                 }
 
                 var hasMoved = false;
-                var positions = gridService.getTraversalDirections(key);
+                var traversalPositions = gridService.getTraversalPositions(key);
 
-                gridService.prepareTiles();
+                gridService.updateTilesState();
 
-                positions.x.forEach(function (x) {
-                    positions.y.forEach(function (y) {
+                traversalPositions.x.forEach(function (x) {
+                    traversalPositions.y.forEach(function (y) {
                         var originalPosition = { x: x, y: y };
-                        var tile = gridService.getCellAt(originalPosition);
+                        var tile = gridService.getTileAtPosition(originalPosition);
 
-                        if (tile) {
-                            var cell = gridService.calculateNextPosition(tile, key);
-                            var next = cell.next;
+                        if (!gridService.isTileHidden(tile)) {
+                            var nextPosition = gridService.calculateNextPosition(tile, key);
+                            var nextTileAtNewPosition = nextPosition.nextTile;
+                            var isMergePossible = nextTileAtNewPosition &&
+                                                  !gridService.isTileHidden(nextTileAtNewPosition) &&
+                                                  nextTileAtNewPosition.value === tile.value &&
+                                                  !nextTileAtNewPosition.isMerged;
 
-                            if (next && next.value === tile.value && !next.merged) {
+                            if (isMergePossible) {
                                 var newValue = tile.value * 2;
-                                var mergedTile = gridService.newTile(tile, newValue);
+                                var mergedTile = gridService.updateTileAtPosition(
+                                    nextTileAtNewPosition, newValue);
 
-                                mergedTile.merged = true;
-                                gridService.moveTile(tile, cell.newPosition);
-
-                                gridService.removeTile(tile);
-                                gridService.insertTile(mergedTile);
-                                gridService.moveTile(mergedTile, next);
+                                //TODO: Think of a new way of merging tiles
+                                gridService.moveTile(tile, nextTileAtNewPosition.getPosition(), true);
 
                                 updateScore(that.currentScore + newValue);
                                 hasWon = mergedTile.value === that.winningValue;
 
                                 hasMoved = true;
                             } else {
-                                gridService.moveTile(tile, cell.newPosition);
+                                gridService.moveTile(tile, nextPosition.newPosition);
 
-                                if (!gridService.isSamePosition(originalPosition, cell.newPosition)) {
+                                if (!gridService.isSamePosition(originalPosition, nextPosition.newPosition)) {
                                     hasMoved = true;
                                 }
                             }
@@ -82,17 +81,13 @@
                     });
                 });
 
-/*
-                $timeout(function () {
-                    if (hasMoved) {
-                        gridService.insertNewTileRandomly();
+                if (hasMoved) {
+                    gridService.activateNewRandomTile();
 
-                        if (hasWon || !movesAvailable()) {
-                            gameOver = true;
-                        }
+                    if (hasWon || !movesAvailable()) {
+                        gameOver = true;
                     }
-                }, 3000);
-*/
+                }
             }
         }
 
@@ -117,7 +112,7 @@
         }
 
         function movesAvailable() {
-            return gridService.anyCellsAvailable() ||
+            return gridService.anyHiddenTiles() ||
                 gridService.tileMatchesAvailable();
         }
     }
