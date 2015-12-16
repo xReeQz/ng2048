@@ -1,6 +1,6 @@
 <div id="game-4">
     <div class="grid-container">
-        <div class="grid-cell" ng-repeat="cell in ngModel.grid track by $index"></div>
+        <div class="grid-cell" ng-repeat="cell in ngModel.tiles track by $index"></div>
     </div>
     <div class="tile-container">
         <div tile ng-model="tile" ng-repeat="tile in ngModel.tiles track by $id(tile.uid || $index)"></div>

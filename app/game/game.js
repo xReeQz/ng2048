@@ -6,85 +6,89 @@
         .module('game', ['grid', 'ngCookies'])
         .service('GameManager', GameManager);
 
-    GameManager.$inject = ['GridService', '$cookieStore'];
+    GameManager.$inject = ['$q', '$timeout', 'GridService', '$cookieStore'];
 
-    function GameManager(gridService, $cookieStore) {
+    function GameManager($q, $timeout, gridService, $cookieStore) {
         var that = this;
 
-        var gameOver;
         var hasWon;
+        var gameOver;
 
         this.winningValue = 2048;
 
         this.move = move;
         this.newGame = newGame;
 
-        this.grid = gridService.grid;
         this.tiles = gridService.tiles;
 
         function newGame() {
-            gridService.buildEmptyGameBoard();
-            gridService.buildStartingPosition();
+            gridService.initGameBoard();
+            gridService.initStartingPosition();
             reinit();
         }
 
         function move(key) {
-            if (hasWon) {
-                return false;
-            }
 
-            var hasMoved = false;
-            var positions = gridService.getTraversalDirections(key);
-
-            gridService.prepareTiles();
-
-            positions.x.forEach(function (x) {
-                positions.y.forEach(function (y) {
-                    var originalPosition = { x: x, y: y };
-                    var tile = gridService.getCellAt(originalPosition);
-
-                    if (tile) {
-                        var cell = gridService.calculateNextPosition(tile, key);
-                        var next = cell.next;
-
-                        console.log(tile.x + ' => ' + cell.newPosition.x + '; ' + tile.y + ' => ' + cell.newPosition.y);
-
-                        if (next && next.value === tile.value && !next.merged) {
-                            var newValue = tile.value * 2;
-                            var mergedTile = gridService.newTile(tile, newValue);
-                            mergedTile.merged = [tile, cell.next];
-
-                            gridService.insertTile(mergedTile);
-                            gridService.removeTile(tile);
-                            gridService.moveTile(mergedTile, next);
-
-                            updateScore(that.currentScore + newValue);
-
-                            if (mergedTile.value === that.winningValue) {
-                                hasWon = true;
-                            }
-
-                            hasMoved = true;
-                        } else {
-                            gridService.moveTile(tile, cell.newPosition);
-                        }
-
-                        if (!gridService.isSamePosition(originalPosition, cell.newPosition)) {
-                            hasMoved = true;
-                        }
-                    }
-                });
+            $q.when(f()).then(function () {
+                console.log(that.tiles
+                    .filter(function (item) { return !item.isHidden; }));
             });
 
-            if (hasMoved) {
-                gridService.insertNewTileRandomly();
+            function f() {
+                if (hasWon) {
+                    return;
+                }
 
-                if (hasWon || !movesAvailable()) {
-                    gameOver = true;
+                var hasMoved = false;
+                var traversalPositions = gridService.getTraversalPositions(key);
+
+                gridService.updateTilesState();
+
+                traversalPositions.x.forEach(function (x) {
+                    traversalPositions.y.forEach(function (y) {
+                        var originalPosition = { x: x, y: y };
+                        var tile = gridService.getTileAtPosition(originalPosition);
+
+                        if (!gridService.isTileHidden(tile)) {
+                            var nextPosition = gridService.calculateNextPosition(tile, key);
+                            var nextTileAtNewPosition = nextPosition.nextTile;
+                            var isMergePossible = nextTileAtNewPosition &&
+                                                  !gridService.isTileHidden(nextTileAtNewPosition) &&
+                                                  nextTileAtNewPosition.value === tile.value &&
+                                                  !nextTileAtNewPosition.isMerged;
+
+                            if (isMergePossible) {
+                                var newValue = tile.value * 2;
+                                var mergedTile = gridService.updateTileAtPosition(
+                                    nextTileAtNewPosition, newValue);
+
+                                //TODO: Think of a new way of merging tiles
+                                gridService.moveTile(tile, nextTileAtNewPosition.getPosition(), true);
+
+                                updateScore(that.currentScore + newValue);
+                                hasWon = mergedTile.value === that.winningValue;
+
+                                hasMoved = true;
+                            } else {
+                                gridService.moveTile(tile, nextPosition.newPosition);
+
+                                if (!gridService.isSamePosition(originalPosition, nextPosition.newPosition)) {
+                                    hasMoved = true;
+                                }
+                            }
+
+                        }
+                    });
+                });
+
+                if (hasMoved) {
+                    gridService.activateNewRandomTile();
+
+                    if (hasWon || !movesAvailable()) {
+                        gameOver = true;
+                    }
                 }
             }
-
-            return true;
         }
 
         function updateScore(newScore) {
@@ -108,7 +112,7 @@
         }
 
         function movesAvailable() {
-            return gridService.anyCellsAvailable() ||
+            return gridService.anyHiddenTiles() ||
                 gridService.tileMatchesAvailable();
         }
     }
