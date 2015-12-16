@@ -34,18 +34,6 @@
   transform: $value;
 }
 
-@mixin transition($args...) {
-  -webkit-transition: $args;
-  -moz-transition: $args;
-  transition: $args;
-}
-
-@mixin transition-property($args...) {
-  -webkit-transition-property: $args;
-  -moz-transition-property: $args;
-  transition-property: $args;
-}
-
 @mixin keyframes($name) {
   @-webkit-keyframes #{$name} {
     @content; 

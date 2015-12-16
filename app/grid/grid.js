@@ -204,6 +204,7 @@
             this.x = position.x;
             this.y = position.y;
             this.value = value || 2;
+            this.isNew = false;
             this.previousPosition = null;
             this.isMerged = false;
             this.isHidden = true;
@@ -221,6 +222,7 @@
             }
 
             function updateState() {
+                that.isNew = false;
                 that.isMerged = false;
                 if (that.previousPosition) {
                     that.setPosition(that.previousPosition);
@@ -232,6 +234,7 @@
                 that.value = 2;
                 that.isHidden = false;
                 that.isMerged = false;
+                that.isNew = true;
             }
 
             function updateValue(newValue) {

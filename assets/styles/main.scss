@@ -196,13 +196,13 @@ h1.title {
     box-sizing: border-box;
 
     &.ng-enter {
-        @include transition(all 1000ms ease-in);
-        @include transform(translate(0, 100%));
+        transition: all 1000ms ease-in;
+        transform: translate(0, 100%);
         opacity: 0;
     }
 
     &.ng-enter-active {
-        @include transform(translate(0, 0));
+        transform: translate(0, 0);
         opacity: 1;
     }
 
@@ -237,8 +237,6 @@ h1.title {
         border-radius: 6px;
         width: $width;
         height: $width;
-        -webkit-box-sizing: border-box;
-        -moz-box-sizing: border-box;
         box-sizing: border-box;
 
         .grid-container {
@@ -270,18 +268,23 @@ h1.title {
                 position: absolute;
                 width: $tile-size;
                 height: $tile-size;
-                @include border-radius($tile-radius);
-                @include transition($transition-time ease-in-out);
-                transition-property: transform;
+                border-radius: $tile-radius;
+                transition: $transition-time ease-in-out;
+                transition-property: left, top;
                 z-index: 3;
 
                 &.tile-hidden {
-                    @include animation(hide $transition-time ease-in);
                     opacity: 0;
                     z-index: 2;
+                    @include animation(hide $transition-time ease-in);
                 }
 
-                &.tile-merged .tile-inner {
+                &.tile-new {
+                    transition: none;
+                    @include animation(appear 200ms ease-in);
+                }
+
+                &.tile-merged {
                     @include animation(pop 200ms ease-in);
                 }
 
@@ -293,7 +296,8 @@ h1.title {
                         $newY: ($tile-size) * ($zeroOffsetY) + ($tile-padding * $zeroOffsetY);
 
                         &.position-#{$zeroOffsetX}-#{$zeroOffsetY} {
-                            @include transform(translate($newX, $newY));
+                            left: $newX;
+                            top: $newY;
                         }
                     }
                 }
@@ -329,7 +333,6 @@ h1.title {
                     border-radius: 3px;
                     text-align: center;
                     font-weight: bold;
-                    z-index: 10;
                     font-size: 2.5em;
                 }
             }
