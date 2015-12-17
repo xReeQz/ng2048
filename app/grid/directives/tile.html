@@ -1,4 +1,4 @@
 <div class="tile position-{{ ngModel.x }}-{{ ngModel.y }} tile-{{ ngModel.value }}" ng-if="ngModel" 
-     ng-class="{ 'tile-merged': ngModel.isMerged, 'tile-hidden': ngModel.isHidden, 'tile-new': ngModel.isNew }">
+     ng-class="{ 'tile-merged': ngModel.isMerged, 'tile-hidden': ngModel.isHidden, 'tile-new': ngModel.isNew, 'phantom': ngModel.isPhantom }">
     <div class="tile-inner">{{ ngModel.value }}</div>
 </div>

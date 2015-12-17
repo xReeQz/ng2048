@@ -7,14 +7,15 @@
         .service('GridService', GridService)
         .factory('TileModel', TileModel);
 
-    GridService.$inject = ['TileModel'];
+    GridService.$inject = ['$rootScope', 'TileModel'];
 
-    function GridService(Tile) {
+    function GridService($rootScope, Tile) {
         var that = this;
 
         var GRID_SIZE = 4;
         var STARTING_TILE_NUMBER = 2;
         var TOTAL_TILE_NUMBER = GRID_SIZE * GRID_SIZE;
+
         var vectors = {
             left: { x: -1, y: 0 },
             right: { x: 1, y: 0 },
@@ -25,8 +26,8 @@
         this.tiles = [];
 
         this.moveTile = moveTile;
+        this.mergeTiles = mergeTiles;
         this.getTileAtPosition = getTileAtPosition;
-        this.updateTileAtPosition = updateTileAtPosition;
         this.updateTilesState = updateTilesState;
         this.isTileHidden = isTileHidden;
         this.isSamePosition = isSamePosition;
@@ -100,13 +101,6 @@
             });
         }
 
-        function updateTileAtPosition(position, value) {
-            var tile = getTileAtPosition(position);
-            tile.updateValue(value);
-
-            return tile;
-        }
-
         function getTraversalPositions(key) {
             var vector = vectors[key];
             var positions = { x: [], y: [] };
@@ -147,16 +141,22 @@
             };
         }
 
-        function moveTile(tile, newPosition, noSwap) {
+        function moveTile(tile, newPosition) {
             var tileAtNewPosition = getTileAtPosition(newPosition);
 
-            if (!noSwap) {
-                tileAtNewPosition.setPosition(tile);
-            } else {
-                tile.hide();
-            }
-
+            tileAtNewPosition.setPosition(tile);
             tile.setPosition(newPosition);
+        }
+
+        function mergeTiles(movingTile, resultTile) {
+            var newValue = movingTile.value * 2;
+            var phantom = createPhantom(movingTile);
+
+            that.tiles.push(phantom);
+            $rootScope.$apply();
+            resultTile.updateValue(newValue);
+            movingTile.hide();
+            phantom.setPosition(resultTile);
         }
 
         function isSamePosition(initialPosition, newPosition) {
@@ -165,6 +165,12 @@
         }
 
         function updateTilesState() {
+            var phantomCount = that.tiles.length - TOTAL_TILE_NUMBER;
+
+            for (var i = 0; i < phantomCount; i++) {
+                that.tiles.pop();
+            }
+
             that.tiles.forEach(function (tile) {
                 tile.updateState();
             });
@@ -194,6 +200,15 @@
 
             return false;
         };
+
+        function createPhantom(tile) {
+            var phantom = new Tile(tile.getPosition(), tile.value);
+
+            phantom.isPhantom = true;
+            phantom.isHidden = false;
+
+            return phantom;
+        }
     }
 
     function TileModel() {
@@ -205,7 +220,6 @@
             this.y = position.y;
             this.value = value || 2;
             this.isNew = false;
-            this.previousPosition = null;
             this.isMerged = false;
             this.isHidden = true;
 
@@ -218,20 +232,18 @@
 
             function hide() {
                 that.isHidden = true;
-                that.previousPosition = that.getPosition();
             }
 
             function updateState() {
                 that.isNew = false;
                 that.isMerged = false;
-                if (that.previousPosition) {
-                    that.setPosition(that.previousPosition);
-                    that.previousPosition = null;
-                }
             }
 
             function activateNew() {
-                that.value = 2;
+                var possibleValues = [2, 2, 2, 2, 4];
+                var randomIndex = Math.floor(Math.random() * 5);
+
+                that.value = possibleValues[randomIndex];
                 that.isHidden = false;
                 that.isMerged = false;
                 that.isNew = true;
@@ -243,10 +255,7 @@
             }
 
             function getPosition() {
-                return {
-                    x: that.x,
-                    y: that.y
-                }
+                return { x: that.x, y: that.y };
             }
 
             function setPosition(newPosition) {

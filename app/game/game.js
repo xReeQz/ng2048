@@ -15,11 +15,11 @@
         var gameOver;
 
         this.winningValue = 2048;
+        this.tiles = gridService.tiles;
 
         this.move = move;
         this.newGame = newGame;
-
-        this.tiles = gridService.tiles;
+        this.skipPhantom = skipPhantom;
 
         function newGame() {
             gridService.initGameBoard();
@@ -29,10 +29,7 @@
 
         function move(key) {
 
-            $q.when(f()).then(function () {
-                console.log(that.tiles
-                    .filter(function (item) { return !item.isHidden; }));
-            });
+            $q.when(f()).then(angular.noop);
 
             function f() {
                 if (hasWon) {
@@ -58,15 +55,11 @@
                                                   !nextTileAtNewPosition.isMerged;
 
                             if (isMergePossible) {
-                                var newValue = tile.value * 2;
-                                var mergedTile = gridService.updateTileAtPosition(
-                                    nextTileAtNewPosition, newValue);
 
-                                //TODO: Think of a new way of merging tiles
-                                gridService.moveTile(tile, nextTileAtNewPosition.getPosition(), true);
+                                gridService.mergeTiles(tile, nextTileAtNewPosition);
 
-                                updateScore(that.currentScore + newValue);
-                                hasWon = mergedTile.value === that.winningValue;
+                                updateScore(that.currentScore + nextTileAtNewPosition.value);
+                                hasWon = nextTileAtNewPosition.value === that.winningValue;
 
                                 hasMoved = true;
                             } else {
@@ -114,6 +107,10 @@
         function movesAvailable() {
             return gridService.anyHiddenTiles() ||
                 gridService.tileMatchesAvailable();
+        }
+
+        function skipPhantom(tile) {
+            return !('isPhantom' in tile);
         }
     }
 

@@ -273,10 +273,12 @@ h1.title {
                 transition-property: left, top;
                 z-index: 3;
 
-                &.tile-hidden {
-                    opacity: 0;
+                &.phantom {
                     z-index: 2;
-                    @include animation(hide $transition-time ease-in);
+                }
+
+                &.tile-hidden {
+                    display: none;
                 }
 
                 &.tile-new {
