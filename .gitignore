@@ -1,0 +1,14 @@
+.bin
+bower_components
+packages
+
+assets/styles/*.css
+assets/styles/*.map
+
+bower.cmd
+git.cmd
+ng2048.sln
+ng2048.sln.DotSettings.user
+ng2048.v12.suo
+node.cmd
+packages.config
